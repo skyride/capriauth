@@ -1,0 +1,91 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+	
+		{% block head %}
+		<title>{% block title %}{% endblock %}</title>
+		{% endblock %}
+		
+		<!-- CSS -->
+		<link href="https://maxcdn.bootstrapcdn.com/bootswatch/3.3.5/flatly/bootstrap.min.css" rel="stylesheet">
+		<link href="static/style.css" rel="stylesheet">
+	</head>
+
+	
+	<body>
+		<nav class="navbar navbar-default navbar-static-top">
+			<div class="container">
+				<div class="navbar-header">
+					<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+						<span class="sr-only">Toggle navigation</span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</button>
+					<a class="navbar-brand" href="/">{{ auth_name }}</a>
+				</div>
+				<div id="navbar" class="navbar-collapse collapse">
+					<ul class="nav navbar-nav">
+						<!-- <li class="active"><a href="#">Home</a></li>
+						<li><a href="#about">About</a></li>
+						<li><a href="#contact">Contact</a></li>
+						<li class="dropdown">
+							<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Dropdown <span class="caret"></span></a>
+							<ul class="dropdown-menu">
+								<li><a href="#">Action</a></li>
+								<li><a href="#">Another action</a></li>
+								<li><a href="#">Something else here</a></li>
+								<li role="separator" class="divider"></li>
+								<li class="dropdown-header">Nav header</li>
+								<li><a href="#">Separated link</a></li>
+								<li><a href="#">One more separated link</a></li>
+							</ul>
+						</li> -->
+					</ul>
+				<ul class="nav navbar-nav navbar-right">
+					<li><img class="nav-charportrait hidden-xs" src="https://image.eveonline.com/Character/93417038_64.jpg"></li>
+					<li>
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Capri Sun KraftFoods <span class="caret"></span></a>
+						<ul class="dropdown-menu">
+							<li class="dropdown-header">My Account</li>
+							<li><a href="#">Settings</a></li>
+							<li><a href="#">Manage APIs</a></li>
+							<li><a href="#">Groups</a></li>
+							<li role="separator" class="divider"></li>
+							<li class="dropdown-header">Session</li>
+							<li><a href="#">Log Out</a></li>
+						</ul>
+					</li>
+					<li>
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Log in <span class="caret"></span></a>
+						<ul class="dropdown-menu">
+							<li>
+								<form class="form-horizontal login-form">
+									<input class="form-control input-sm" style="width: 220px;" id="username" type="text" placeholder="Username">
+									<input class="form-control input-sm" id="password" type="password" placeholder="Password">
+									<div align="right"><button type="submit" class="btn btn-primary btn-sm">Login</button></div>
+								</form>
+							</li>
+						</ul>
+					</li>
+					<!-- <li><a href="#">Login</a></li> -->
+				</ul>
+				</div>
+			</div>
+		</nav>
+	
+		<div class="container">
+			{% block content %}
+			{% endblock %}
+		</div>
+		
+		
+		<!-- JS -->
+		<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+		<script src="static/main.js"></script>
+	</body>
+</html>
