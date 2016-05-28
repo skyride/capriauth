@@ -12,6 +12,45 @@ def apiLog(errorMessage):
     print errorLine
 
 
+# Update the public information about an alliance, returns false if an error occurs
+def upsertAlliance(eve, allianceID):
+    try:
+        # Check if we already have the alliance in the database
+        session = getSession()
+        query = session.query(Alliance).filter(Alliance.allianceID == allianceID)
+        if query.count() > 0:
+            dbAlliance = query[0]
+            # Don't update if it's been done within the last 6hrs
+            if (dbAlliance.lastUpdated + datetime.timedelta(0, 21600)) > datetime.datetime.now():
+                return True
+        else:
+            # Create the Alliance object
+            dbAlliance = Alliance()
+            dbAlliance.allianceID = allianceID
+
+        # Call the XMLAPI
+        allianceList = eve.eve.AllianceList(version=1)
+        indAllianceList = allianceList.alliances.IndexedBy("allianceID")
+        apiAlliance = indAllianceList.Get(allianceID)
+
+        # Update the object
+        dbAlliance.allianceName = apiAlliance.name
+        dbAlliance.ticker = apiAlliance.shortName
+        dbAlliance.memberCount = apiAlliance.memberCount
+        dbAlliance.startDate = datetime.datetime.fromtimestamp(apiAlliance.startDate)
+        dbAlliance.lastUpdated = datetime.datetime.now()
+
+        # Commit the changes
+        session.add(dbAlliance)
+        session.commit()
+        return True
+
+    except Exception as e:
+        apiLog("Exception occurred doing public alliance update on allianceID=%d: %s" % (allianceID, str(e)))
+        session.rollback()
+        return False
+
+
 
 # Update the public information about a corporation, returns false if an error occurs
 def upsertCorporation(eve, corporationID):
@@ -29,8 +68,10 @@ def upsertCorporation(eve, corporationID):
             dbCorp = Corporation()
             dbCorp.corporationID = corporationID
 
-        # Call the XMLAPI and update the object
+        # Call the XMLAPI
         corpSheet = eve.corp.CorporationSheet(corporationID=corporationID)
+
+        # Update the object
         dbCorp.corporationName = corpSheet.corporationName
         dbCorp.ticker = corpSheet.ticker
         dbCorp.taxRate = corpSheet.taxRate
@@ -39,14 +80,21 @@ def upsertCorporation(eve, corporationID):
         if corpSheet.allianceID == 0:
             dbCorp.allianceID = None
         else:
+            # Upsert the alliance
+            if not upsertAlliance(eve=eve, allianceID=corpSheet.allianceID):
+                apiLog("An error occurred upserting allianceID=%d, so we'll rollback and try later" % corpSheet.allianceID)
+                session.rollback()
+                return
             dbCorp.allianceID = corpSheet.allianceID
 
         # Commit the changes
         session.add(dbCorp)
         session.commit()
         return True
+
     except Exception as e:
         apiLog("Exception occurred doing public corp update on corporationID=%d: %s" % (corporationID, str(e)))
+        session.rollback()
         return False
 
 

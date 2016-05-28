@@ -52,6 +52,7 @@ class Alliance(Base):
 	allianceID = Column(BigInteger, primary_key=True)
 	allianceName = Column(String(64))
 	ticker = Column(String(5))
+	memberCount = Column(Integer)
 	startDate = Column(DateTime)
 	lastUpdated = Column(DateTime)
 
