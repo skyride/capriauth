@@ -103,8 +103,7 @@ class Character(Base):
 
 	corporation = relationship("Corporation", back_populates="characters")
 	skills = relationship("Skill", back_populates="character")
-
-	api = relationship("Api")
+	api = relationship("Api", back_populates="characters")
 
 	def __repr__(self):
 		return "<Character(characterID=%d, characterName='%s', balance=%d, lastUpdated='%s')>" % (self.characterID, self.characterName, self.balance, self.lastUpdated)
@@ -120,7 +119,7 @@ class Api(Base):
 	keyID = Column(Integer)
 	vCode = Column(String(64))
 	type = Column(String(11))
-	expires = Column(DateTime)
+	expires = Column(DateTime, nullable=True)
 	accessMask = Column(Integer)
 	paidUntil = Column(DateTime)
 	name = Column(String(64))
@@ -128,6 +127,8 @@ class Api(Base):
 	added = Column(DateTime)
 
 	user = relationship("User")
+	characters = relationship("Character")
+
 
 	def __repr__(self):
 		return "<Api(id=%d, userId=%d, username='%s', keyID=%d)>" % (self.id, self.userId, self.user.username, self.keyID)
@@ -254,7 +255,3 @@ class Asset(Base):
 
 	def __repr__(self):
 		return "<Asset(itemID=%d, locationID=%d, typeID=%d, quantity=%d, characterID=%d)>" % (self.itemID, self.locationID, self.typeID, self.quantity, self.characterID)
-
-
-# Relationships that require a prerequisite defintion
-#User.logins = relationship("Login", order_by=Login.date, back_populates="user")
