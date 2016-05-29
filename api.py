@@ -12,6 +12,56 @@ def apiLog(errorMessage):
     print errorLine
 
 
+# Add an API key
+# Returns True on success, False if the key is invalid, an error message if it doesn't have enough permissions
+def addApi(user, keyID, vCode, name):
+    try:
+        # Check if the API key provided is already in the database
+        session = getSession()
+        if session.query(Api).filter(Api.keyID == keyID, Api.vCode==vCode).count() > 0:
+            return "This API Key is already in the database"
+
+        # We NEED APIKeyInfo, AccountStatus and CharacterSheet. The other ones we can do without,
+        # so let's just test for those 3
+        eveapi.set_user_agent("eveapi.py/1.3")
+        eve = eveapi.EVEAPIConnection()
+        try:
+            keyInfo = eve.account.APIKeyInfo(keyID=keyID, vCode=vCode)
+        except eveapi.Error as e:
+            return "This API key is invalid or expired"
+        try:
+            accStatus = eve.account.AccountStatus(keyID=keyID, vCode=vCode)
+            apiChar = eve.char.CharacterSheet(keyID=keyID, vCode=vCode, characterID=keyInfo.key.characters[0].characterID)
+        except eveapi.Error as e:
+            return "Your API key doesn't have enough permissions, at minimum it needs to be an active key with AccountStatus and CharacterInfo"
+
+        # Build the key object
+        api = Api()
+        api.userId = user.id
+        api.keyID = keyID
+        api.vCode = vCode
+        api.accessMask = keyInfo.key.accessMask
+        api.type = keyInfo.key.type
+        api.paidUntil = datetime.datetime.fromtimestamp(accStatus.paidUntil)
+        api.createDate = datetime.datetime.fromtimestamp(accStatus.createDate)
+        api.logonCount = accStatus.logonCount
+        api.logonMinutes = accStatus.logonMinutes
+        api.name = name
+        api.lastUpdated = datetime.datetime.now()
+        api.added = datetime.datetime.now()
+
+        session.add(api)
+        session.commit()
+
+        # Now update the api key
+        updateApiKey(session=session, api=api)
+
+    except eveapi.Error as e:
+        return "An error occurred on the EVE API, it's probably not your fault, try again later"
+    except Exception as e:
+        return "An error occurred querying this key: %s" % str(e)
+
+
 # Update the public information about an alliance, returns false if an error occurs
 def upsertAlliance(eve, allianceID):
     try:
@@ -227,7 +277,6 @@ def updateApiKey(session, api):
             dbSkillsDict = {}
             for dbSkill in dbChar.skills:
                 dbSkillsDict[dbSkill.typeID] = dbSkill
-            print apiChar
             dbSkillSet = frozenset(map(lambda x: "%d:%d" % (x.characterID, x.typeID), dbChar.skills))
             for apiSkill in charSheet.skills:
                 if "%d:%d" % (apiChar.characterID, apiSkill.typeID) not in dbSkillSet:

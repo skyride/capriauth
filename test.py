@@ -2,7 +2,7 @@ from datetime import datetime
 
 from db import *
 from models import *
-from api import updateApiKey
+from api import addApi, updateApiKey
 
 # Hook us up to the DB
 auth = getSession(echo=True)
@@ -58,5 +58,10 @@ auth = getSession(echo=True)
 #for x in auth.query(Asset):
 #	print x
 
-for x in auth.query(Api):
-	updateApiKey(auth, x)
+# Test API Checking
+#for x in auth.query(Api):
+#	updateApiKey(auth, x)
+
+# Test adding an API key
+user = auth.query(User).filter(User.username == "skyride").first()
+print addApi(user=user, name="skyride275", keyID=5343700, vCode="sWPH8B58M0xPiSIENFCqWJO8br4qZMB387aCcJw4xrRwmucWyXduUSlv8qnIcdBd")
