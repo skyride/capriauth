@@ -195,8 +195,7 @@ def updateApiKey(session, api):
                 dbAssetsDict[dbAsset.itemID] = dbAsset
             newAssets = []
             for apiAsset in assetList.assets:
-                assetIDMap = frozenset(map(lambda x: x.itemID, dbAssets))
-                if apiAsset.itemID not in assetIDMap:
+                if apiAsset.itemID not in frozenset(map(lambda x: x.itemID, dbAssets)):
                     dbAsset = Asset()
                     dbAsset.itemID = apiAsset.itemID
                     dbAsset.characterID = apiChar.characterID
@@ -214,6 +213,27 @@ def updateApiKey(session, api):
             # Add the assets to the session
             session.add_all(newAssets)
 
+            # Add or update skills from the API into the database
+            newSkills = []
+            dbSkillsDict = {}
+            for dbSkill in dbChar.skills:
+                dbSkillsDict[dbSkill.typeID] = dbSkill
+            print apiChar
+            for apiSkill in charSheet.skills:
+                if "%d:%d" % (apiChar.characterID, apiSkill.typeID) not in map(lambda x: "%d:%d" % (x.characterID, x.typeID), dbChar.skills):
+                    dbSkill = Skill()
+                    dbSkill.characterID = apiChar.characterID
+                    dbSkill.typeID = apiSkill.typeID
+                    newSkills.append(dbSkill)
+                else:
+                    dbSkill = dbSkillsDict[apiSkill.typeID]
+
+                # Update the skills values
+                dbSkill.level = apiSkill.level
+                dbSkill.skillpoints = apiSkill.skillpoints
+
+            # Add the skills to the session
+            session.add_all(newSkills)
 
 
         # Commit all of the updates to the database
@@ -223,6 +243,6 @@ def updateApiKey(session, api):
     except eveapi.Error as e:
         apiLog("XMLAPI returned the following error: [%d] '%s'" % (e.code, e.message))
         session.rollback()
-    except Exception as e:
-        apiLog("Generic Exception: %s" % e.message)
-        session.rollback()
+    #except Exception as e:
+    #    apiLog("Generic Exception: %s" % str(e))
+    #    session.rollback()
