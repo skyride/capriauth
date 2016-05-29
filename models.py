@@ -123,6 +123,9 @@ class Api(Base):
 	expires = Column(DateTime, nullable=True)
 	accessMask = Column(Integer)
 	paidUntil = Column(DateTime)
+	createDate = Column(DateTime)
+	logonCount = Column(BigInteger)
+	logonMinutes = Column(BigInteger)
 	name = Column(String(64))
 	lastUpdated = Column(DateTime)
 	added = Column(DateTime)
@@ -249,7 +252,7 @@ class Asset(Base):
 	quantity = Column(BigInteger)
 	flag = Column(Integer)
 	singleton = Column(Boolean)
-	characterID = Column(BigInteger, ForeignKey("%s.characters.characterID" % config.authdb))
+	characterID = Column(BigInteger, ForeignKey("%s.characters.characterID" % config.authdb), primary_key=True)
 
 	type = relationship("InvType")
 	character = relationship("Character")

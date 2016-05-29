@@ -122,9 +122,16 @@ def updateApiKey(session, api):
             apiLog("Generic Exception checking API ID %d: %s" % (api.id, str(e)))
             return
 
+        # Grab AccountStatus too
+        accStatus = eve.account.AccountStatus(keyID=api.keyID, vCode=api.vCode)
+
         # Update the key info
         api.accessMask = keyinfo.key.accessMask
         api.type = keyinfo.key.type
+        api.paidUntil = datetime.datetime.fromtimestamp(accStatus.paidUntil)
+        api.createDate = datetime.datetime.fromtimestamp(accStatus.createDate)
+        api.logonCount = accStatus.logonCount
+        api.logonMinutes = accStatus.logonMinutes
         api.lastUpdated = datetime.datetime.now()
         if keyinfo.key.expires == "":
             api.expires = None
@@ -148,9 +155,10 @@ def updateApiKey(session, api):
             else:
                 for dbChar in api.characters:
                     if dbChar.characterID == apiChar.characterID:
+                        # Suppresed this check as it doesn't make logical sense to limit it this far down stream
                         # Check its not been updated within the last 119 mins
-                        if (dbChar.lastUpdated + datetime.timedelta(0, 7140)) > datetime.datetime.now():
-                            return
+                        #if (dbChar.lastUpdated + datetime.timedelta(0, 7140)) > datetime.datetime.now():
+                        #    return
                         break
 
             # Get the CharacterSheet
@@ -194,8 +202,9 @@ def updateApiKey(session, api):
             for dbAsset in dbAssets:
                 dbAssetsDict[dbAsset.itemID] = dbAsset
             newAssets = []
+            dbAssetSet = frozenset(frozenset(map(lambda x: x.itemID, dbAssets)))
             for apiAsset in assetList.assets:
-                if apiAsset.itemID not in frozenset(map(lambda x: x.itemID, dbAssets)):
+                if apiAsset.itemID not in dbAssetSet:
                     dbAsset = Asset()
                     dbAsset.itemID = apiAsset.itemID
                     dbAsset.characterID = apiChar.characterID
@@ -219,8 +228,9 @@ def updateApiKey(session, api):
             for dbSkill in dbChar.skills:
                 dbSkillsDict[dbSkill.typeID] = dbSkill
             print apiChar
+            dbSkillSet = frozenset(map(lambda x: "%d:%d" % (x.characterID, x.typeID), dbChar.skills))
             for apiSkill in charSheet.skills:
-                if "%d:%d" % (apiChar.characterID, apiSkill.typeID) not in map(lambda x: "%d:%d" % (x.characterID, x.typeID), dbChar.skills):
+                if "%d:%d" % (apiChar.characterID, apiSkill.typeID) not in dbSkillSet:
                     dbSkill = Skill()
                     dbSkill.characterID = apiChar.characterID
                     dbSkill.typeID = apiSkill.typeID
