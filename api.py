@@ -13,7 +13,7 @@ def apiLog(errorMessage):
 
 
 # Add an API key
-# Returns True on success, False if the key is invalid, an error message if it doesn't have enough permissions
+# Returns an Api object on success, False if the key is invalid, an error message if it doesn't have enough permissions
 def addApi(user, keyID, vCode, name):
     try:
         # Check if the API key provided is already in the database
@@ -21,17 +21,19 @@ def addApi(user, keyID, vCode, name):
         if session.query(Api).filter(Api.keyID == keyID, Api.vCode==vCode).count() > 0:
             return "This API Key is already in the database"
 
-        # We NEED APIKeyInfo, AccountStatus and CharacterSheet. The other ones we can do without,
-        # so let's just test for those 3
+        # We NEED APIKeyInfo, AccountStatus, CharacterSheet and AssetList
         eveapi.set_user_agent("eveapi.py/1.3")
         eve = eveapi.EVEAPIConnection()
         try:
             keyInfo = eve.account.APIKeyInfo(keyID=keyID, vCode=vCode)
+            if keyInfo.key.type == "Corporation":
+                return "This is a corp API, it's need to be a Character or Account API"
         except eveapi.Error as e:
             return "This API key is invalid or expired"
         try:
             accStatus = eve.account.AccountStatus(keyID=keyID, vCode=vCode)
             apiChar = eve.char.CharacterSheet(keyID=keyID, vCode=vCode, characterID=keyInfo.key.characters[0].characterID)
+            assetList = eve.char.AssetList(keyID=keyID, vCode=vCode, characterID=keyInfo.key.characters[0].characterID, flat=1)
         except eveapi.Error as e:
             return "Your API key doesn't have enough permissions, at minimum it needs to be an active key with AccountStatus and CharacterInfo"
 
@@ -56,9 +58,13 @@ def addApi(user, keyID, vCode, name):
         # Now update the api key
         updateApiKey(session=session, api=api)
 
+        return api
+
     except eveapi.Error as e:
+        session.rollback()
         return "An error occurred on the EVE API, it's probably not your fault, try again later"
     except Exception as e:
+        session.rollback()
         return "An error occurred querying this key: %s" % str(e)
 
 
@@ -150,9 +156,12 @@ def upsertCorporation(eve, corporationID):
 
 
 # Update everything about this API object in the database
-def updateApiKey(session, api):
+def updateApiKey(api):
     eveapi.set_user_agent("eveapi.py/1.3")
     eve = eveapi.EVEAPIConnection()
+
+    # Open a session
+    session = getSession()
 
     # Open our main rollback try
     try:
@@ -162,7 +171,7 @@ def updateApiKey(session, api):
         except eveapi.Error as e:
             # ...and delete the api if it isn't
             if e.code == 403:
-                apiLog("Deleting API ID %d as it has been deleted or expired" % api.id)
+                apiLog("\tDeleting API ID %d as it has been deleted or expired" % api.id)
                 session.delete(api)
                 session.commit()
             else:
@@ -193,6 +202,7 @@ def updateApiKey(session, api):
         # Purge characters from database that aren't on the API
         for dbChar in api.characters:
             if dbChar.characterID not in map(lambda x: x.characterID, key.characters):
+                apiLog("Deleted character as they were no longer on the API characterID=%d, characterName=%s" % (dbChar.characterID, dbChar.characterName))
                 session.delete(dbChar)
 
         # Add or update characters from the API into the database
@@ -294,13 +304,22 @@ def updateApiKey(session, api):
             # Add the skills to the session
             session.add_all(newSkills)
 
+            # Log line
+            apiLog("\tUpdated characterID=%d, characterName='%s'" % (dbChar.characterID, dbChar.characterName))
+
 
         # Commit all of the updates to the database
         session.commit()
 
     # Exceptions for our main rollback try
     except eveapi.Error as e:
-        apiLog("XMLAPI returned the following error: [%d] '%s'" % (e.code, e.message))
+        if e.code == 403:
+            session.rollback()
+            session.delete(api)
+            session.commit()
+            apiLog("\tDeleted API as it has lost permissions we need, into the trash you go")
+        else:
+            apiLog("\tXMLAPI returned the following error: [%d] '%s'" % (e.code, e.message))
         session.rollback()
     #except Exception as e:
     #    apiLog("Generic Exception: %s" % str(e))

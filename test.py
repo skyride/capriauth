@@ -60,8 +60,8 @@ auth = getSession(echo=True)
 
 # Test API Checking
 #for x in auth.query(Api):
-#	updateApiKey(auth, x)
+#	updateApiKey(x)
 
 # Test adding an API key
-user = auth.query(User).filter(User.username == "skyride").first()
-print addApi(user=user, name="skyride275", keyID=5343700, vCode="sWPH8B58M0xPiSIENFCqWJO8br4qZMB387aCcJw4xrRwmucWyXduUSlv8qnIcdBd")
+#user = auth.query(User).filter(User.username == "skyride").first()
+#print addApi(user=user, name="skyride275", keyID=123456, vCode="asdasd")

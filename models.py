@@ -21,7 +21,7 @@ class User(Base):
 	registeredOn = Column(DateTime)
 	active = Column(Boolean)
 
-	logins = relationship("Login", back_populates="user")
+	logins = relationship("Login", back_populates="user", passive_deletes=True)
 
 	def __repr__(self):
 		return "<User(id=%d, username='%s')>" % (self.id, self.username)
@@ -103,7 +103,7 @@ class Character(Base):
 	lastUpdated = Column(DateTime)
 
 	corporation = relationship("Corporation", back_populates="characters")
-	skills = relationship("Skill", back_populates="character")
+	skills = relationship("Skill", back_populates="character", passive_deletes=True)
 	api = relationship("Api", back_populates="characters")
 
 	def __repr__(self):
@@ -131,7 +131,7 @@ class Api(Base):
 	added = Column(DateTime)
 
 	user = relationship("User")
-	characters = relationship("Character")
+	characters = relationship("Character", passive_deletes=True)
 
 
 	def __repr__(self):
