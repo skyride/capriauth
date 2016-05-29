@@ -84,7 +84,7 @@ def upsertCorporation(eve, corporationID):
             if not upsertAlliance(eve=eve, allianceID=corpSheet.allianceID):
                 apiLog("An error occurred upserting allianceID=%d, so we'll rollback and try later" % corpSheet.allianceID)
                 session.rollback()
-                return
+                return False
             dbCorp.allianceID = corpSheet.allianceID
 
         # Commit the changes
@@ -148,6 +148,9 @@ def updateApiKey(session, api):
             else:
                 for dbChar in api.characters:
                     if dbChar.characterID == apiChar.characterID:
+                        # Check its not been updated within the last 119 mins
+                        if (dbChar.lastUpdated + datetime.timedelta(0, 7140)) > datetime.datetime.now():
+                            return
                         break
 
             # Get the CharacterSheet
@@ -172,6 +175,46 @@ def updateApiKey(session, api):
             dbChar.remoteStationDate = datetime.datetime.fromtimestamp(charSheet.remoteStationDate)
             dbChar.homeStationID = charSheet.homeStationID
             dbChar.lastUpdated = datetime.datetime.now()
+
+            # Get the Asset List
+            assetList = eve.char.AssetList(keyID=api.keyID, vCode=api.vCode, characterID=apiChar.characterID, flat=1)
+            apiAssetsById = assetList.assets.IndexedBy("itemID")
+
+            # Purge assets from the database that aren't on the API
+            #dbAssets = session.query(Asset).filter(Asset.characterID == apiChar.characterID).all()
+            for dbAsset in session.query(Asset).filter(Asset.characterID == apiChar.characterID).all():
+                try:
+                    apiAssetsById.Get(dbAsset.itemID)
+                except:
+                    session.delete(dbAsset)
+
+            # Add or update assets from the API into the database
+            dbAssets = session.query(Asset).filter(Asset.characterID == apiChar.characterID).all()
+            dbAssetsDict = {}
+            for dbAsset in dbAssets:
+                dbAssetsDict[dbAsset.itemID] = dbAsset
+            newAssets = []
+            for apiAsset in assetList.assets:
+                assetIDMap = frozenset(map(lambda x: x.itemID, dbAssets))
+                if apiAsset.itemID not in assetIDMap:
+                    dbAsset = Asset()
+                    dbAsset.itemID = apiAsset.itemID
+                    dbAsset.characterID = apiChar.characterID
+                    newAssets.append(dbAsset)
+                else:
+                    dbAsset = dbAssetsDict[apiAsset.itemID]
+
+                # Update the asset values
+                dbAsset.locationID = apiAsset.locationID
+                dbAsset.typeID = apiAsset.typeID
+                dbAsset.quantity = apiAsset.quantity
+                dbAsset.flag = apiAsset.flag
+                dbAsset.singleton = apiAsset.singleton
+
+            # Add the assets to the session
+            session.add_all(newAssets)
+
+
 
         # Commit all of the updates to the database
         session.commit()

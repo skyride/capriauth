@@ -5,7 +5,7 @@ from models import *
 from api import updateApiKey
 
 # Hook us up to the DB
-auth = getSession(echo=False)
+auth = getSession(echo=True)
 
 # Test add a user
 #ed_user = User(username='skyride', password='asd', email='skylinerspeeder@gmail.com', registeredOn=datetime.utcnow(), active=True)
