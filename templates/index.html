@@ -4,5 +4,31 @@
 		{{ super() }}
 	{% endblock %}
 	{% block content %}
-		<h1>{{ content }}</h1>
+		<form>
+			<div class="well">
+				<div class="form-group">
+					<h1>Welcome to {{config.name}}</h1>
+					<p>Sign up to get access to Mumble, Jabber and more..</p>
+					<br />
+
+					<div class="form-group">
+						<label for="username">Username</label>
+						<input type="text" class="form-control" id="username" name="username" placeholder="Username">
+					</div>
+					<div class="form-group">
+						<label for="email">Email</label>
+						<input type="email" class="form-control" id="email" name="email" placeholder="Email">
+					</div>
+					<label>Password</label>
+					<div class="form-inline">
+						<div class="form-group">
+							<input type="password" class="form-control" id="password1" name="password1" placeholder="Password">
+						</div>
+						<div class="form-group">
+							<input type="password" class="form-control" id="password2" name="password2" placeholder="Confirm">
+						</div>
+					</div>
+				</div>
+			</div>
+		</form>
 	{% endblock %}

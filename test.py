@@ -2,7 +2,7 @@ from datetime import datetime
 
 from db import *
 from models import *
-from api import addApi, updateApiKey
+from api import addApi, updateApiKey, calculateTags
 
 # Hook us up to the DB
 auth = getSession(echo=True)
@@ -65,3 +65,12 @@ auth = getSession(echo=True)
 # Test adding an API key
 #user = auth.query(User).filter(User.username == "skyride").first()
 #print addApi(user=user, name="skyride275", keyID=123456, vCode="asdasd")
+
+# Test join
+#for x in auth.query(Asset, InvGroup.groupName).join(InvType).join(InvGroup).join(Character).join(Api)\
+#        .filter(InvGroup.categoryID == 6,\
+#                Api.userId == 7).group_by(InvGroup.groupID).all():
+#    print x.groupName
+
+# Test the tag calculation
+calculateTags(auth.query(User).filter(User.id == 7).first())

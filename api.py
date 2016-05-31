@@ -1,5 +1,6 @@
 import datetime
 import time
+import logging
 
 from db import getSession
 from eveapi import eveapi
@@ -14,10 +15,8 @@ def apiLog(errorMessage):
 
 # Add an API key
 # Returns an Api object on success, False if the key is invalid, an error message if it doesn't have enough permissions
-def addApi(user, keyID, vCode, name):
+def addApi(user, keyID, vCode, name, session=getSession()):
     try:
-        # Check if the API key provided is already in the database
-        session = getSession()
         if session.query(Api).filter(Api.keyID == keyID, Api.vCode==vCode).count() > 0:
             return "This API Key is already in the database"
 
@@ -68,11 +67,53 @@ def addApi(user, keyID, vCode, name):
         return "An error occurred querying this key: %s" % str(e)
 
 
-# Update the public information about an alliance, returns false if an error occurs
-def upsertAlliance(eve, allianceID):
-    try:
-        # Check if we already have the alliance in the database
+# Recalculate a user's tags
+# Takes a User object
+def calculateTags(dbUser, session=None):
+    # Create a session if one didn't already exist
+    if session == None:
         session = getSession()
+        commitOnEnd = True
+    else:
+        commitOnEnd = False
+
+    # Get a set of the current tags
+    currTags = map(lambda x: x.tag, session.query(Tag).filter(Tag.userId == dbUser.id).all())
+    currTags = frozenset(currTags)
+    newTags = []
+
+    # Grab Ship Types
+    for x in session.query(Asset, InvGroup.groupName).join(InvType).join(InvGroup).join(Character).join(Api)\
+    .filter(InvGroup.categoryID == 6,\
+    Api.userId == dbUser.id).group_by(InvGroup.groupID).all():
+        newTags.append("owns:%s" % x.groupName)
+
+    # Purge old sets
+    for x in frozenset(currTags).difference(newTags):
+        session.delete(session.query(Tag).filter(Tag.userId == dbUser.id, Tag.tag == x).first())
+
+    # Add new sets
+    for x in frozenset(newTags).difference(currTags):
+        newTag = Tag()
+        newTag.userId = dbUser.id
+        newTag.tag = x
+        session.add(newTag)
+
+    # Commit the session as it was created within this method
+    if commitOnEnd == True:
+        session.commit()
+
+
+# Update the public information about an alliance, returns false if an error occurs
+def upsertAlliance(eve, allianceID, session=None):
+    try:
+        if session == None:
+            session = getSession()
+            commitOnEnd = True
+        else:
+            commitOnEnd = False
+
+        # Check if we already have the alliance in the database
         query = session.query(Alliance).filter(Alliance.allianceID == allianceID)
         if query.count() > 0:
             dbAlliance = query[0]
@@ -98,7 +139,8 @@ def upsertAlliance(eve, allianceID):
 
         # Commit the changes
         session.add(dbAlliance)
-        session.commit()
+        if commitOnEnd == True:
+            session.commit()
         return True
 
     except Exception as e:
@@ -109,10 +151,15 @@ def upsertAlliance(eve, allianceID):
 
 
 # Update the public information about a corporation, returns false if an error occurs
-def upsertCorporation(eve, corporationID):
+def upsertCorporation(eve, corporationID, session=None):
     try:
+        if session == None:
+            session = getSession()
+            commitOnEnd = True
+        else:
+            commitOnEnd = False
+
         # Check if we already have the corp in the database
-        session = getSession()
         query = session.query(Corporation).filter(Corporation.corporationID == corporationID)
         if query.count() > 0:
             dbCorp = query[0]
@@ -145,7 +192,8 @@ def upsertCorporation(eve, corporationID):
 
         # Commit the changes
         session.add(dbCorp)
-        session.commit()
+        if commitOnEnd == True:
+            session.commit()
         return True
 
     except Exception as e:
@@ -156,12 +204,9 @@ def upsertCorporation(eve, corporationID):
 
 
 # Update everything about this API object in the database
-def updateApiKey(api):
+def updateApiKey(api, session=getSession()):
     eveapi.set_user_agent("eveapi.py/1.3")
     eve = eveapi.EVEAPIConnection()
-
-    # Open a session
-    session = getSession()
 
     # Open our main rollback try
     try:

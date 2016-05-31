@@ -22,6 +22,7 @@ class User(Base):
 	active = Column(Boolean)
 
 	logins = relationship("Login", back_populates="user", passive_deletes=True)
+	tags = relationship("Tag", back_populates="user")
 
 	def __repr__(self):
 		return "<User(id=%d, username='%s')>" % (self.id, self.username)
@@ -259,3 +260,14 @@ class Asset(Base):
 
 	def __repr__(self):
 		return "<Asset(itemID=%d, locationID=%d, typeID=%d, quantity=%d, characterID=%d)>" % (self.itemID, self.locationID, self.typeID, self.quantity, self.characterID)
+
+
+# Tag Class - auth.tags
+class Tag(Base):
+	__tablename__ = "tags"
+	__table_args__ = {'schema': config.authdb }
+
+	userId = Column(Integer, ForeignKey("%s.users.id" % config.authdb), primary_key=True)
+	tag = Column(String(64), primary_key=True)
+
+	user = relationship("User", back_populates="tags")
