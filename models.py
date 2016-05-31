@@ -21,6 +21,7 @@ class User(Base):
 	registeredOn = Column(DateTime)
 	active = Column(Boolean)
 
+	apis = relationship("Api", back_populates="user")
 	logins = relationship("Login", back_populates="user", passive_deletes=True)
 	tags = relationship("Tag", back_populates="user")
 
@@ -131,7 +132,7 @@ class Api(Base):
 	lastUpdated = Column(DateTime)
 	added = Column(DateTime)
 
-	user = relationship("User")
+	user = relationship("User", back_populates="apis")
 	characters = relationship("Character", passive_deletes=True)
 
 
