@@ -5,6 +5,7 @@ import logging
 from db import getSession
 from eveapi import eveapi
 from models import *
+from config import getConfig
 
 # Logging errors/messages on the API
 def apiLog(errorMessage):
@@ -77,16 +78,44 @@ def calculateTags(dbUser, session=None):
     else:
         commitOnEnd = False
 
+    # Get the config
+    config = getConfig()
+
     # Get a set of the current tags
     currTags = map(lambda x: x.tag, session.query(Tag).filter(Tag.userId == dbUser.id).all())
     currTags = frozenset(currTags)
     newTags = []
 
-    # Grab Ship Types
+    # Grab Ship Groups
     for x in session.query(Asset, InvGroup.groupName).join(InvType).join(InvGroup).join(Character).join(Api)\
     .filter(InvGroup.categoryID == 6,\
     Api.userId == dbUser.id).group_by(InvGroup.groupID).all():
         newTags.append("owns:%s" % x.groupName)
+
+    # Grab Ship Types
+    for x in session.query(Asset, InvType.typeName).join(InvType).join(InvGroup).join(Character).join(Api)\
+    .filter(InvGroup.categoryID == 6,\
+    Api.userId == dbUser.id).group_by(InvType.typeID).all():
+        newTags.append("owns:%s" % x.typeName)
+
+    # Grab skills (via chars in your membership)
+    for x in session.query(Character, Corporation.corporationID, Corporation.allianceID).join(Corporation).join(Api).join(User).filter(User.id == dbUser.id).all():
+        # Check if the character meets any of the membership requirements
+        for test in config.auth.members:
+            if test.type not in ["alliance", "corporation"]:
+                continue
+
+            if test.type == "alliance" and x.allianceID != test.id:
+                print x
+                continue
+            if test.type == "corporation" and x.corporationID != test.id:
+                continue
+
+            # If we've reached here, the character meets the requirements
+            for skill in session.query(Skill, InvType.typeName).join(InvType).filter(Skill.characterID == x.Character.characterID).all():
+                newTags.append("has:%s" % skill.typeName)
+                if skill.Skill.level == 5 and skill.Skill.skillpoints >= 1280000:
+                    newTags.append("has:%s 5" % skill.typeName)
 
     # Purge old sets
     for x in frozenset(currTags).difference(newTags):
