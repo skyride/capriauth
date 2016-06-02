@@ -106,7 +106,6 @@ def calculateTags(dbUser, session=None):
                 continue
 
             if test.type == "alliance" and x.allianceID != test.id:
-                print x
                 continue
             if test.type == "corporation" and x.corporationID != test.id:
                 continue
@@ -323,7 +322,6 @@ def updateApiKey(api, session=getSession()):
             apiAssetsById = assetList.assets.IndexedBy("itemID")
 
             # Purge assets from the database that aren't on the API
-            #dbAssets = session.query(Asset).filter(Asset.characterID == apiChar.characterID).all()
             for dbAsset in session.query(Asset).filter(Asset.characterID == apiChar.characterID).all():
                 try:
                     apiAssetsById.Get(dbAsset.itemID)
@@ -377,6 +375,39 @@ def updateApiKey(api, session=getSession()):
 
             # Add the skills to the session
             session.add_all(newSkills)
+
+
+            # Purge jump clones from the database that aren't on the API
+            jumpClonesById = charSheet.jumpClones.IndexedBy("jumpCloneID")
+            for dbJumpClone in session.query(JumpClone).filter(JumpClone.characterID == dbChar.characterID).all():
+                try:
+                    jumpClonesById.Get(dbJumpClone.jumpCloneID)
+                except:
+                    session.delete(dbJumpClone)
+
+            # Add or update jump clones from the API into the database
+            newJumpClones = []
+            dbJumpClonesDict = {}
+            dbJumpClones = session.query(JumpClone).filter(JumpClone.characterID == charSheet.characterID).all()
+            for x in dbJumpClones:
+                dbJumpClonesDict[x.jumpCloneID] = x
+            dbJumpCloneSet = frozenset(map(lambda x: x.jumpCloneID, dbJumpClones))
+            for apiJumpClone in charSheet.jumpClones:
+                if apiJumpClone.jumpCloneID not in dbJumpCloneSet:
+                    dbJumpClone = JumpClone()
+                    dbJumpClone.jumpCloneID = apiJumpClone.jumpCloneID
+                    dbJumpClone.characterID = charSheet.characterID
+                    newJumpClones.append(dbJumpClone)
+                else:
+                    dbJumpClone = dbJumpClonesDict[apiJumpClone.jumpCloneID]
+
+                # Update the values
+                dbJumpClone.cloneName = apiJumpClone.cloneName
+                dbJumpClone.locationID = apiJumpClone.locationID
+                dbJumpClone.typeID = apiJumpClone.typeID
+
+            # Add the new jump clones to the session
+            session.add_all(newJumpClones)
 
             # Log line
             apiLog("\tUpdated characterID=%d, characterName='%s'" % (dbChar.characterID, dbChar.characterName))

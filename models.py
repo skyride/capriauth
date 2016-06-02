@@ -107,6 +107,7 @@ class Character(Base):
 	corporation = relationship("Corporation", back_populates="characters")
 	skills = relationship("Skill", back_populates="character", passive_deletes=True)
 	api = relationship("Api", back_populates="characters")
+	jumpClones = relationship("JumpClone", back_populates="character")
 
 	def __repr__(self):
 		return "<Character(characterID=%d, characterName='%s', balance=%d, lastUpdated='%s')>" % (self.characterID, self.characterName, self.balance, self.lastUpdated)
@@ -272,3 +273,43 @@ class Tag(Base):
 	tag = Column(String(64), primary_key=True)
 
 	user = relationship("User", back_populates="tags")
+
+	def __repr__(self):
+		return "<Tag(tag='%s', userId=%d)>" % (self.tag, self.userId)
+
+
+# Jump Clone Class - auth.jumpClones
+class JumpClone(Base):
+	__tablename__ = "jumpClones"
+	__table_args__ = {'schema': config.authdb }
+
+	jumpCloneID = Column(BigInteger, primary_key=True)
+	characterID = Column(BigInteger, ForeignKey("%s.characters.characterID" % config.authdb))
+	cloneName = Column(String(64))
+	typeID = Column(Integer, ForeignKey("%s.invTypes.typeID" % config.sdedb))
+	locationID = Column(BigInteger)
+
+	character = relationship("Character", back_populates="jumpClones")
+	implants = relationship("Implant", back_populates="jumpClone")
+	type = relationship("InvType")
+
+	def __repr__(self):
+		return "<JumpClone(jumpCloneID=%d, characterID=%d, cloneName='%s')>" % (self.jumpCloneID, self.characterID, self.cloneName)
+
+
+# Implant Class - auth.implants
+class Implant(Base):
+	__tablename__ = "implants"
+	__table_args__ = {'schema': config.authdb }
+
+	id = Column(Integer, primary_key=True)
+	characterID = Column(BigInteger, ForeignKey("%s.characters.characterID" % config.authdb))
+	jumpCloneID = Column(BigInteger, ForeignKey("%s.jumpClones.jumpCloneID" % config.authdb))
+	typeID = Column(Integer, ForeignKey("%s.invTypes.typeID" % config.sdedb))
+
+	character = relationship("Character")
+	jumpClone = relationship("JumpClone", back_populates="implants")
+	type = relationship("InvType")
+
+	def __repr__(self):
+		return "<Implant(id=%d, characterID=%d, typeID=%d, jumpCloneID=%d)>" % (self.id, self.characterID, self.typeID, self.jumpCloneID)

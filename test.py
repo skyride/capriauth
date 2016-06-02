@@ -73,4 +73,12 @@ auth = getSession(echo=True)
 #    print x.groupName
 
 # Test the tag calculation
-calculateTags(auth.query(User).filter(User.id == 7).first())
+#calculateTags(auth.query(User).filter(User.id == 7).first())
+
+# Query for JumpClone
+#for x in auth.query(JumpClone):
+#    print x
+
+# Query for Implants
+for x in auth.query(Implant):
+    print x
