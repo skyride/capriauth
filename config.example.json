@@ -1,0 +1,19 @@
+{
+	"auth": {
+		"name": "CapriAuth",
+		"members": [
+			{
+				"type": "alliance",
+				"id": 864733958
+			}
+		]
+	},
+	"db": {
+		"host": "127.0.0.1",
+		"port": 3306,
+		"authdb": "capriauth",
+		"sdedb": "fuzzworks",
+		"user": "capriauth",
+		"passw": "passw0rd"
+	}
+}
