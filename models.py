@@ -312,4 +312,4 @@ class Implant(Base):
 	type = relationship("InvType")
 
 	def __repr__(self):
-		return "<Implant(id=%d, characterID=%d, typeID=%d, jumpCloneID=%d)>" % (self.id, self.characterID, self.typeID, self.jumpCloneID)
+		return "<Implant(id=%d, characterID=%d, typeID=%d, jumpCloneID=%s)>" % (self.id, self.characterID, self.typeID, self.jumpCloneID)

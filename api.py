@@ -388,7 +388,7 @@ def updateApiKey(api, session=getSession()):
             # Add or update jump clones from the API into the database
             newJumpClones = []
             dbJumpClonesDict = {}
-            dbJumpClones = session.query(JumpClone).filter(JumpClone.characterID == charSheet.characterID).all()
+            dbJumpClones = session.query(JumpClone).filter(JumpClone.characterID == dbChar.characterID).all()
             for x in dbJumpClones:
                 dbJumpClonesDict[x.jumpCloneID] = x
             dbJumpCloneSet = frozenset(map(lambda x: x.jumpCloneID, dbJumpClones))
@@ -408,6 +408,37 @@ def updateApiKey(api, session=getSession()):
 
             # Add the new jump clones to the session
             session.add_all(newJumpClones)
+
+            # Handle current implants
+            apiCurrImplants = frozenset(map(lambda x: x.typeID, charSheet.implants))
+            for x in session.query(Implant).filter(Implant.characterID == dbChar.characterID).filter(Implant.jumpCloneID == None).all():
+                if x.typeID not in apiCurrImplants:
+                    session.delete(x)
+
+            dbImplantSet = frozenset(map(lambda x: x.typeID, session.query(Implant).filter(Implant.characterID == dbChar.characterID).filter(Implant.jumpCloneID == None).all()))
+            for x in charSheet.implants:
+                if x.typeID not in dbImplantSet:
+                    dbImplant = Implant()
+                    dbImplant.characterID = dbChar.characterID
+                    dbImplant.jumpCloneID = None
+                    dbImplant.typeID = x.typeID
+                    session.add(dbImplant)
+
+            # Handle Jump Clone implants
+            apiJCImplants = frozenset(map(lambda x: "%d:%d" % (x.jumpCloneID, x.typeID), charSheet.jumpCloneImplants))
+            for x in session.query(Implant).filter(Implant.characterID == dbChar.characterID).filter(Implant.jumpCloneID != None).all():
+                if "%d:%d" % (x.jumpCloneID, x.typeID) not in apiJCImplants:
+                    session.delete(x)
+
+            dbImplantSet = frozenset(map(lambda x: "%d:%d" % (x.jumpCloneID, x.typeID), session.query(Implant).filter(Implant.characterID == dbChar.characterID).filter(Implant.jumpCloneID != None).all()))
+            for x in charSheet.jumpCloneImplants:
+                if "%d:%d" % (x.jumpCloneID, x.typeID) not in dbImplantSet:
+                    dbImplant = Implant()
+                    dbImplant.characterID = dbChar.characterID
+                    dbImplant.jumpCloneID = x.jumpCloneID
+                    dbImplant.typeID = x.typeID
+                    session.add(dbImplant)
+
 
             # Log line
             apiLog("\tUpdated characterID=%d, characterName='%s'" % (dbChar.characterID, dbChar.characterName))
