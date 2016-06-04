@@ -102,6 +102,9 @@ class Character(Base):
 	DoB = Column(DateTime)
 	remoteStationDate = Column(DateTime)
 	homeStationID = Column(BigInteger)
+	shipTypeID = Column(Integer)
+	shipName = Column(String(40))
+	lastKnownLocation = Column(String(128))
 	lastUpdated = Column(DateTime)
 
 	corporation = relationship("Corporation", back_populates="characters")

@@ -34,6 +34,8 @@ def addApi(user, keyID, vCode, name, session=getSession()):
             accStatus = eve.account.AccountStatus(keyID=keyID, vCode=vCode)
             apiChar = eve.char.CharacterSheet(keyID=keyID, vCode=vCode, characterID=keyInfo.key.characters[0].characterID)
             assetList = eve.char.AssetList(keyID=keyID, vCode=vCode, characterID=keyInfo.key.characters[0].characterID, flat=1)
+            charInfo = eve.eve.CharacterInfo(keyID=keyID, vCode=vCode, characterID=keyInfo.key.characters[0].characterID)
+
         except eveapi.Error as e:
             return "Your API key doesn't have enough permissions, at minimum it needs to be an active key with AccountStatus and CharacterInfo"
 
@@ -296,6 +298,7 @@ def updateApiKey(api, session=getSession()):
 
             # Get the CharacterSheet
             charSheet = eve.char.CharacterSheet(keyID=api.keyID, vCode=api.vCode, characterID=apiChar.characterID)
+            charInfo = eve.eve.CharacterInfo(keyID=api.keyID, vCode=api.vCode, characterID=apiChar.characterID)
 
             # Upsert the corporation
             if not upsertCorporation(eve=eve, corporationID=charSheet.corporationID):
@@ -315,6 +318,9 @@ def updateApiKey(api, session=getSession()):
             dbChar.DoB = datetime.datetime.fromtimestamp(charSheet.DoB)
             dbChar.remoteStationDate = datetime.datetime.fromtimestamp(charSheet.remoteStationDate)
             dbChar.homeStationID = charSheet.homeStationID
+            dbChar.shipTypeID = charInfo.shipTypeID
+            dbChar.shipName = charInfo.shipName
+            dbChar.lastKnownLocation = charInfo.lastKnownLocation
             dbChar.lastUpdated = datetime.datetime.now()
 
             # Get the Asset List
