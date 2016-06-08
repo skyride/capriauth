@@ -100,7 +100,7 @@ def calculateTags(dbUser, session=None):
     Api.userId == dbUser.id).group_by(InvType.typeID).all():
         newTags.append("owns:%s" % x.typeName)
 
-    # Grab skills (via chars in your membership)
+    # Check membership on chars for a few things
     for x in session.query(Character, Corporation.corporationID, Corporation.allianceID).join(Corporation).join(Api).join(User).filter(User.id == dbUser.id).all():
         # Check if the character meets any of the membership requirements
         for test in config.auth.members:
@@ -112,11 +112,15 @@ def calculateTags(dbUser, session=None):
             if test.type == "corporation" and x.corporationID != test.id:
                 continue
 
-            # If we've reached here, the character meets the requirements
+            # Grab Skills
             for skill in session.query(Skill, InvType.typeName).join(InvType).filter(Skill.characterID == x.Character.characterID).all():
                 newTags.append("has:%s" % skill.typeName)
                 if skill.Skill.level == 5 and skill.Skill.skillpoints >= 1280000:
                     newTags.append("has:%s 5" % skill.typeName)
+
+            # Grab Implant sets excluding supercap pilots
+            #for x in session.query(Implant).join(InvType)
+
 
     # Purge old sets
     for x in frozenset(currTags).difference(newTags):

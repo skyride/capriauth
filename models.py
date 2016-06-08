@@ -2,6 +2,7 @@ import sqlalchemy
 from sqlalchemy import ForeignKey, Column, Integer, BigInteger, Float, String, Boolean, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql.functions import coalesce
 
 from config import getConfig
 
@@ -225,6 +226,7 @@ class InvType(Base):
 
 	group = relationship("InvGroup", back_populates="types")
 	marketGroup = relationship("InvMarketGroup", back_populates="types")
+	attributes = relationship("DgmTypeAttribute", back_populates="type")
 
 	def __repr__(self):
 		return "<InvType(typeID=%d, typeName='%s', groupID=%d)>" % (self.typeID, self.typeName, self.groupID)
@@ -316,3 +318,24 @@ class Implant(Base):
 
 	def __repr__(self):
 		return "<Implant(id=%d, characterID=%d, typeID=%d, jumpCloneID=%s)>" % (self.id, self.characterID, self.typeID, self.jumpCloneID)
+
+
+class DgmTypeAttribute(Base):
+	__tablename__ = "dgmTypeAttributes"
+	__table_args__ = {'schema': config.sdedb }
+
+	typeID = Column(Integer, ForeignKey("%s.invTypes.typeID" % config.sdedb), primary_key=True)
+	attributeID = Column(Integer, ForeignKey("%s.dgmAttributeTypes.attributeID" % config.sdedb), primary_key=True)
+	valueInt = Column(Integer)
+	valueFloat = Column(Float)
+
+	def value(self):
+		if self.valueInt == None:
+			return self.valueFloat
+		else:
+			return self.valueInt
+
+	type = relationship("InvType", back_populates="attributes")
+
+	def __repr__(self):
+		return "<DgmTypeAttribute(typeID=%d, attributeID=%d)>" % (self.typeID, self.attributeID)
