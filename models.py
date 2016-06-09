@@ -258,15 +258,53 @@ class Asset(Base):
 	locationID = Column(BigInteger)
 	typeID = Column(Integer, ForeignKey("%s.invTypes.typeID" % config.sdedb))
 	quantity = Column(BigInteger)
-	flag = Column(Integer)
+	flag = Column(Integer, ForeignKey("%s.invFlags.flagID" % config.sdedb))
 	singleton = Column(Boolean)
 	characterID = Column(BigInteger, ForeignKey("%s.characters.characterID" % config.authdb), primary_key=True)
 
 	type = relationship("InvType")
 	character = relationship("Character")
+	invFlag = relationship("InvFlag")
+	packagedVolume = relationship("InvVolume", uselist=False)
+
+	def volume(self, quantity=None):
+		if quantity == None:
+			quantity = self.quantity
+		else:
+			quantity = int(quantity)
+		if self.singleton == False:
+			print self.packagedVolume
+			if self.packagedVolume != None:
+				return self.packagedVolume.volume * quantity
+			
+		return self.type.volume * quantity
 
 	def __repr__(self):
 		return "<Asset(itemID=%d, locationID=%d, typeID=%d, quantity=%d, characterID=%d)>" % (self.itemID, self.locationID, self.typeID, self.quantity, self.characterID)
+
+# InvFlag Class - sde.invFlags
+class InvFlag(Base):
+	__tablename__ = "invFlags"
+	__table_args__ = {'schema': config.sdedb }
+
+	flagID = Column(Integer, primary_key=True)
+	flagName = Column(String(200))
+	flagText = Column(String(100))
+	orderID = Column(Integer)
+
+	def __repr__(self):
+		return "<InvFlag(flagID=%d, flagName='%s, orderID=%d')>" % (self.flagID, self.flagName, self.orderID)
+
+# InvVolume Class - sde.invVolumes
+class InvVolume(Base):
+	__tablename__ = "invVolumes"
+	__table_args__ = {'schema': config.sdedb }
+
+	typeid = Column(Integer, ForeignKey("%s.assets.typeID" % config.authdb), primary_key=True)
+	volume = Column(Integer)
+
+	def __repr__(self):
+		return "<InvVolume(typeid=%d, volume=%d)>" % (self.typeid, self.volume)
 
 
 # Tag Class - auth.tags

@@ -1,3 +1,5 @@
+import sys
+
 from flask import Flask, Request, render_template
 from flask.ext.login import LoginManager, UserMixin, login_required
 
@@ -11,6 +13,8 @@ from dispfuncs import *
 config = getConfig()
 session = getSession()
 
+reload(sys)
+sys.setdefaultencoding("utf-8")
 app = Flask(__name__)
 login_manager = LoginManager()
 login_manager.init_app(app)

@@ -5,12 +5,12 @@
 	{% endblock %}
 	{% block content %}
 		<div class="row">
-			<div class="col-xs-12 col-lg-6">
+			<div class="col-xs-12 col-md-6">
 				<h1><img src="https://image.eveonline.com/Character/{{ship.character.characterID}}_64.jpg"> {{ship.character.characterName}}</h1>
 				<h2><img src="https://image.eveonline.com/Render/{{ship.invType.typeID}}_64.png"> {{ship.invType.typeName}}</h2>
 			</div>
 
-			<div align="center" class="col-xs-12 col-lg-6">
+			<div align="center" class="col-xs-12 col-md-6">
 				<div id="Fitting_Panel" style="position: relative; height:398px; width:398px; z-index: 3">
 				<div id="mask" style="position:absolute; left: 0px; top: 0 px; width:398px; height:398px; z-index:-1;">
 				<img style="position:absolute; left: 0px; top: 0px;  height:398px; width:398px; border:0px" src="/static/img/tyrannis.png" alt="">
@@ -87,21 +87,29 @@
 			</div>
 		</div>
 		<hr />
+			<ul class="nav nav-tabs" roles="tablist">
+				<li role="presentation" class="active"><a href="#tab-bylocation" aria-controls="tab-bylocation" role="tab" data-toggle="tab">Locations</a></li>
+				<li role="presentation" class=""><a href="#tab-bygroup" aria-controls="tab-bygroup" role="tab" data-toggle="tab">Groups</a></li>
+				<li role="presentation" class=""><a href="#tab-eft" aria-controls="tab-eft" role="tab" data-toggle="tab">EFT Block</a></li>
+			</ul>
 
+		<div class="tab-content">
+		<div role="tabpanel" id="tab-bygroup" class="tab-pane" style="padding-top: 8px;">
 		<div class="row">
 		{% for group in ship.getContentsByGroup() %}
-		<div class="col-xs-12 col-lg-6">
+		<div class="col-xs-12 col-md-6">
 		<div class="panel panel-default">
 			<div class="panel-heading">
 				{{group.group.groupName}}
 			</div>
 			<div class="panel-body" style="padding: 0;">
-				<table class="table table-striped table-hover" style="margin: 0;">
+				<table class="table table-striped table-hover table-condensed" style="margin: 0;">
 						<thead>
 							<tr>
-								<td class="col-xs-2">&nbsp;</td>
-								<td class="col-xs-8">Item</td>
+								<td class="col-xs-1">&nbsp;</td>
+								<td class="col-xs-7">Item</td>
 								<td class="col-xs-2">Quantity</td>
+								<td class="col-xs-2">Volume</td
 							</tr>
 						</thead>
 						{% for item in group['items'] %}
@@ -109,6 +117,7 @@
 							<td><div align="center"><img src="https://image.eveonline.com/Type/{{item.InvType.typeID}}_32.png"></a></td>
 							<td>{{item.InvType.typeName}}</td>
 							<td>{{item.quantity}}</td>
+							<td>{{item.Asset.volume(item.quantity)}}</td>
 						</tr>
 						{% endfor %}
 				</table>
@@ -117,4 +126,48 @@
 		</div>
 		{% endfor %}
 		</div>
+		</div>
+
+		<div role="tabpanel" class="tab-pane active" id="tab-bylocation" style="padding-top: 8px">
+			<div class="row">
+				{% for group in ship.getContentsByLocation() %}
+				<div class="col-xs-12 col-md-6">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							{{group.flag.flagText}}
+						</div>
+						<div class="panel-body" style="padding: 0;">
+							<table class="table table-hover table-striped table-condensed" style="margin-bottom: 0;">
+							<thead>
+								<tr>
+									<td class="col-xs-1">&nbsp;</td>
+									<td class="col-xs-7">Item</td>
+									<td class="col-xs-2">Quantity</td>
+									<td class="col-xs-2">Volume</td>
+								</tr>
+							</thead>
+								{% for item in group['items'] %}
+								<tr>
+									<td><div align="center"><img src="https://image.eveonline.com/Type/{{item.InvType.typeID}}_32.png"></div></td>
+									<td>{{item.InvType.typeName}}</td>
+									<td>{{item.quantity}}</td>
+									<td>{{item.Asset.volume(item.quantity)}}</td>
+								</tr>
+								{% endfor %}
+							</table>
+						</div>
+					</div>
+				</div>
+				{% endfor %}
+			</div>
+		</div>
+
+		<div role="tabpanel" class="tab-pane" id="tab-eft" style="padding-top: 8px">
+			<div class="well well-sm">
+				<pre>{{ship.getEftBlock()}}</pre>
+			</div>
+		</div>
+
+		<script type="text/javascript">
+		</script>
 	{% endblock %}

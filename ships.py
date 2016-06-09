@@ -131,6 +131,89 @@ class Ship():
 		contents.append(group)
 		return contents
 
+	def getContentsByLocation(self):
+		contents = []
+		prevgroup = -1
+		group = None
+
+		for x in self.session.query(Asset, InvType, InvGroup, InvFlag, func.sum(Asset.quantity).label("quantity")).join(InvType).join(InvGroup).join(InvFlag).filter(Asset.locationID == self.asset.itemID, sqlalchemy.not_(InvFlag.flagText.contains("slot")), sqlalchemy.not_(InvFlag.flagText.contains("tube"))).group_by(Asset.flag, Asset.typeID).order_by(Asset.flag).order_by(InvType.groupID).all():
+			if x != None:
+				if x.InvFlag.flagID != prevgroup:
+					if group != None:
+						contents.append(group)
+					group = {"flag": x.InvFlag, "items": [] }
+				group['items'].append(x)
+				prevgroup = x.InvFlag.flagID
+		contents.append(group)
+		return contents
+
+
+	def getEftBlock(self):
+		block = "[%s, %s's %s]\n\n" % (self.invType.typeName, self.character.characterName, self.invType.typeName)
+		# Lows
+		for i in range(1, (self.countLowSlots() + 1)):
+			mod = self.getLowMod(i)
+			charge = self.getLowCharge(i)
+			if mod == None:
+				block += "[Empty Low slot]\n"
+			else:
+				if charge == None:
+					block += "%s\n" % mod.InvType.typeName
+				else:
+					block += "%s, %s\n" % (mod.InvType.typeName, charge.InvType.typeName)
+
+		# Mids
+		block += "\n"
+		for i in range(1, (self.countMidSlots() + 1)):
+			mod = self.getMidMod(i)
+			charge = self.getMidCharge(i)
+			if mod == None:
+				block += "[Empty Mid slot]\n"
+			else:
+				if charge == None:
+					block += "%s\n" % mod.InvType.typeName
+				else:
+					block += "%s, %s\n" % (mod.InvType.typeName, charge.InvType.typeName)
+
+		# Highs
+		block += "\n"
+		for i in range(1, (self.countHighSlots() + 1)):
+			mod = self.getHighMod(i)
+			charge = self.getHighCharge(i)
+			if mod == None:
+				block += "[Empty High slot]\n"
+			else:
+				if charge == None:
+					block += "%s\n" % mod.InvType.typeName
+				else:
+					block += "%s, %s\n" % (mod.InvType.typeName, charge.InvType.typeName)
+
+		# Rigs
+		block += "\n"
+		for i in range(1, (self.countRigSlots() + 1)):
+			mod = self.getRig(i)
+			if mod == None:
+				block += "[Empty Rig slot]\n"
+			else:
+				block += "%s\n" % mod.InvType.typeName
+
+		# Drones
+		drones = self.session.query(Asset, InvType, func.sum(Asset.quantity).label("quantity")).join(InvType).join(InvGroup).filter(Asset.locationID == self.asset.itemID, InvGroup.categoryID == 18).group_by(Asset.typeID).all()
+		if len(drones) > 0:
+			block += "\n\n"
+			for x in drones:
+				block += "%s x%d\n" % (x.InvType.typeName, x.quantity)
+
+		# Cargo
+		cargo = self.session.query(Asset, InvType, func.sum(Asset.quantity).label("quantity")).join(InvType).filter(Asset.locationID == self.asset.itemID, Asset.flag == 5).group_by(Asset.typeID).all()
+		print cargo
+		if len(cargo) > 0:
+			block += "\n\n"
+			for x in cargo:
+				block += "%s x%d\n" % (x.InvType.typeName, x.quantity)
+
+		return block
+
 	def getAttributes(self):
 		if self.attributes == None:
 			self.attributes = self.invType.attributes
